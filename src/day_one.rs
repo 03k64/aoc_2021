@@ -1,16 +1,14 @@
-fn count_increases_raw(measurements: &Vec<usize>) -> usize {
-    (1..measurements.len())
-        .filter(|ix| measurements[*ix] > measurements[ix - 1])
+/// Returns the frequency with which the sum of a sliding window is an increase on the sum of the
+/// previous sliding window. To return the frequency with which an individual measurement is an
+/// increase on the previous measurement, set `window_size` to `1`.
+///
+/// For successive sliding windows, A and B, an increase may be detected if the final element of B
+/// is greater than the first element of A, all remaining elements are common to both A and B.
+fn count_increases(measurements: &Vec<usize>, window_size: usize) -> usize {
+    measurements
+        .windows(window_size + 1)
+        .filter(|window| window[window_size] > window[0])
         .count()
-}
-
-fn count_increases_sliding_window(measurements: &Vec<usize>, window_size: usize) -> usize {
-    let window_sums = measurements
-        .windows(window_size)
-        .map(|window| window.iter().sum())
-        .collect();
-
-    count_increases_raw(&window_sums)
 }
 
 #[cfg(test)]
@@ -28,37 +26,37 @@ mod tests {
     }
 
     #[test]
-    fn test_count_increases_raw_with_example_input() {
+    fn test_count_increases_with_example_input_for_sliding_window_of_one() {
         let measurements = vec![199, 200, 208, 210, 200, 207, 240, 269, 260, 263];
         let expected = 7;
-        let actual = super::count_increases_raw(&measurements);
+        let actual = super::count_increases(&measurements, 1);
 
         assert_eq!(expected, actual);
     }
 
     #[test]
-    fn test_count_increases_raw_with_real_input() {
+    fn test_count_increases_with_real_input_for_sliding_window_of_one() {
         let measurements = read_measurements_from_input_file();
         let expected = 1266;
-        let actual = super::count_increases_raw(&measurements);
+        let actual = super::count_increases(&measurements, 1);
 
         assert_eq!(expected, actual);
     }
 
     #[test]
-    fn test_count_increases_sliding_window_with_example_input() {
+    fn test_count_increases_with_example_input_for_sliding_window_of_three() {
         let measurements = vec![199, 200, 208, 210, 200, 207, 240, 269, 260, 263];
         let expected = 5;
-        let actual = super::count_increases_sliding_window(&measurements, WINDOW_SIZE);
+        let actual = super::count_increases(&measurements, 3);
 
         assert_eq!(expected, actual);
     }
 
     #[test]
-    fn test_count_increases_sliding_window_with_real_input() {
+    fn test_count_increases_with_real_input_for_sliding_window_of_three() {
         let measurements = read_measurements_from_input_file();
         let expected = 1217;
-        let actual = super::count_increases_sliding_window(&measurements, WINDOW_SIZE);
+        let actual = super::count_increases(&measurements, 3);
 
         assert_eq!(expected, actual);
     }
