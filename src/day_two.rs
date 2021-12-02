@@ -20,15 +20,10 @@ impl FromStr for Command {
     type Err = CommandError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut entries = s.split_whitespace();
-
-        let tag = entries
-            .next()
+        let (tag, units) = s.split_once(' ')
             .ok_or(CommandError::InvalidCommand(s.to_owned()))?;
 
-        let units = entries
-            .next()
-            .ok_or(CommandError::InvalidCommand(s.to_owned()))?
+        let units = units
             .parse()
             .map_err(|_| CommandError::InvalidCommand(s.to_owned()))?;
 
