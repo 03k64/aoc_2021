@@ -13,13 +13,8 @@ fn count_increases(measurements: &Vec<usize>, window_size: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use crate::input;
-
-    const WINDOW_SIZE: usize = 3;
-
     fn read_measurements_from_input_file() -> Vec<usize> {
-        input::read_input_file("day_one.txt")
-            .expect("Could not read: input/day_one.txt")
+        include_str!("../input/day_one.txt")
             .lines()
             .map(|line| line.parse::<usize>().expect("Measurement is invalid"))
             .collect()

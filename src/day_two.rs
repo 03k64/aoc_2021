@@ -103,11 +103,10 @@ fn calculate_position<P>(commands: &str) -> P where P: Default + Add<Command, Ou
 
 #[cfg(test)]
 mod tests {
-    use crate::{day_two::{AimedPosition, SimplePosition}, input};
+    use crate::day_two::{AimedPosition, SimplePosition};
 
     fn read_commands_from_input_file() -> String {
-        input::read_input_file("day_two.txt")
-            .expect("Could not read: input/day_two.txt")
+        include_str!("../input/day_two.txt").to_owned()
     }
 
     #[test]
