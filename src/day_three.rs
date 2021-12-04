@@ -1,42 +1,82 @@
-fn transpose(matrix: &Vec<String>) -> Vec<String> {
-    let height = matrix.len();
-    let width = matrix.get(0).map(|d| d.len()).unwrap_or_default();
+fn filter_candidates(candidates: Vec<String>, prefix: &str) -> Vec<String> {
+    candidates
+        .into_iter()
+        .filter(|c| c.starts_with(prefix))
+        .collect()
+}
 
-    let mut transposed = vec![String::with_capacity(height); width];
-    for row in matrix {
-        let row_chars: Vec<char> = row.chars().collect();
-        for i in 0..width {
-            transposed[i].push(row_chars[i]);
+fn is_column_one(column: usize) -> impl FnMut(&&String) -> bool {
+    move |diagnostic: &&String| diagnostic.get(column..column + 1).unwrap_or_default() == "1"
+}
+
+fn majority_one(candidates: &Vec<String>, column: usize, threshold: usize, allow_eq: bool) -> bool {
+    let frequency = candidates.iter().filter(is_column_one(column)).count();
+
+    if allow_eq {
+        frequency >= threshold
+    } else {
+        frequency > threshold
+    }
+}
+
+fn calculate_power_consumption(diagnostics: &Vec<String>) -> u64 {
+    let threshold = diagnostics.len() / 2;
+    let width = diagnostics.get(0).map(|d| d.len()).unwrap_or_default();
+    let shift = 64 - width;
+
+    let most_common_value =
+        move |g, c| (g << 1) + u64::from(majority_one(diagnostics, c, threshold, false));
+
+    let gamma = (0..width).fold(0, most_common_value);
+    let epsilon = (!(gamma << shift)) >> shift;
+
+    gamma * epsilon
+}
+
+fn calculate_life_support_rating(diagnostics: &Vec<String>) -> u64 {
+    let width = diagnostics.get(0).map(|d| d.len()).unwrap_or_default();
+
+    let first_o2_digit = u64::from(majority_one(
+        &diagnostics,
+        0,
+        (diagnostics.len() + 1) / 2,
+        true,
+    ));
+
+    let mut co2 = (1 - first_o2_digit).to_string();
+    co2.reserve(width - 1);
+
+    let mut o2 = first_o2_digit.to_string();
+    o2.reserve(width - 1);
+
+    let mut o2_candidates: Vec<String> = filter_candidates(diagnostics.clone(), &o2);
+    let mut o2_threshold = (o2_candidates.len() + 1) / 2;
+
+    let mut co2_candidates: Vec<String> = filter_candidates(diagnostics.clone(), &co2);
+    let mut co2_threshold = (co2_candidates.len() + 1) / 2;
+
+    for col in 1..width {
+        if o2_candidates.len() > 1 {
+            let digit = u64::from(majority_one(&o2_candidates, col, o2_threshold, true));
+            o2.push_str(digit.to_string().as_str());
+            o2_candidates = filter_candidates(o2_candidates, &o2);
+            o2_threshold = (o2_candidates.len() + 1) / 2;
+        } else if o2_candidates.len() == 1 {
+            o2 = o2_candidates.remove(0);
+        }
+
+        if co2_candidates.len() > 1 {
+            let digit = u64::from(!majority_one(&co2_candidates, col, co2_threshold, true));
+            co2.push_str(digit.to_string().as_str());
+            co2_candidates = filter_candidates(co2_candidates, &co2);
+            co2_threshold = (co2_candidates.len() + 1) / 2;
+        } else if co2_candidates.len() == 1 {
+            co2 = co2_candidates.remove(0);
         }
     }
 
-    transposed
-}
-
-fn calculate_power_consumption(diagnostics: &Vec<String>) -> usize {
-    let height = diagnostics.len();
-    let width = diagnostics.get(0).map(|d| d.len()).unwrap_or_default();
-    let threshold = height / 2;
-    let transposed = transpose(diagnostics);
-
-    let (epsilon, gamma) = transposed.into_iter().fold(
-        (String::with_capacity(width), String::with_capacity(width)),
-        |(mut g, mut e), t| {
-            let gamma = t.replace("0", "").len() > threshold;
-            let epsilon = !gamma;
-
-            let gamma = usize::from(gamma).to_string();
-            let epsilon = usize::from(epsilon).to_string();
-
-            g.push_str(gamma.as_str());
-            e.push_str(epsilon.as_str());
-
-            (g, e)
-        },
-    );
-
-    usize::from_str_radix(&epsilon, 2).unwrap_or_default()
-        * usize::from_str_radix(&gamma, 2).unwrap_or_default()
+    u64::from_str_radix(&o2, 2).unwrap_or_default()
+        * u64::from_str_radix(&co2, 2).unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -81,35 +121,35 @@ mod tests {
         assert_eq!(expected, actual);
     }
 
-    // #[test]
-    // fn test_calculate_life_support_rating_with_example_input_for_sliding_window_of_three() {
-    //     let diagnostics = vec![
-    //         String::from("00100"),
-    //         String::from("11110"),
-    //         String::from("10110"),
-    //         String::from("10111"),
-    //         String::from("10101"),
-    //         String::from("01111"),
-    //         String::from("00111"),
-    //         String::from("11100"),
-    //         String::from("10000"),
-    //         String::from("11001"),
-    //         String::from("00010"),
-    //         String::from("01010"),
-    //     ];
+    #[test]
+    fn test_calculate_life_support_rating_with_example_input_for_sliding_window_of_three() {
+        let diagnostics = vec![
+            String::from("00100"),
+            String::from("11110"),
+            String::from("10110"),
+            String::from("10111"),
+            String::from("10101"),
+            String::from("01111"),
+            String::from("00111"),
+            String::from("11100"),
+            String::from("10000"),
+            String::from("11001"),
+            String::from("00010"),
+            String::from("01010"),
+        ];
 
-    //     let expected = 0;
-    //     let actual = super::calculate_life_support_rating(&diagnostics);
+        let expected = 230;
+        let actual = super::calculate_life_support_rating(&diagnostics);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 
-    // #[test]
-    // fn test_calculate_life_support_rating_with_real_input_for_sliding_window_of_three() {
-    //     let diagnostics = read_diagnostics_from_input_file();
-    //     let expected = 1544000595;
-    //     let actual = super::calculate_life_support_rating(&diagnostics);
+    #[test]
+    fn test_calculate_life_support_rating_with_real_input_for_sliding_window_of_three() {
+        let diagnostics = read_diagnostics_from_input_file();
+        let expected = 2784375;
+        let actual = super::calculate_life_support_rating(&diagnostics);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 }
