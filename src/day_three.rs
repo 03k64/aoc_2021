@@ -122,7 +122,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_life_support_rating_with_example_input_for_sliding_window_of_three() {
+    fn test_calculate_life_support_rating_with_example_input() {
         let diagnostics = vec![
             String::from("00100"),
             String::from("11110"),
@@ -145,7 +145,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_life_support_rating_with_real_input_for_sliding_window_of_three() {
+    fn test_calculate_life_support_rating_with_real_input() {
         let diagnostics = read_diagnostics_from_input_file();
         let expected = 2784375;
         let actual = super::calculate_life_support_rating(&diagnostics);
