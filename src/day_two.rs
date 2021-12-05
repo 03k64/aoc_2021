@@ -1,5 +1,4 @@
 use std::{ops::Add, str::FromStr};
-use thiserror::Error;
 
 #[derive(Clone, Copy, Debug)]
 enum Command {
@@ -8,11 +7,8 @@ enum Command {
     Up(isize),
 }
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug)]
 enum CommandError {
-    #[error(
-        "the command `{0}` is invalid, expected `down <units>`, `forward <units>` or `up <units>`"
-    )]
     InvalidCommand(String),
 }
 
@@ -20,7 +16,8 @@ impl FromStr for Command {
     type Err = CommandError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (tag, units) = s.split_once(' ')
+        let (tag, units) = s
+            .split_once(' ')
             .ok_or(CommandError::InvalidCommand(s.to_owned()))?;
 
         let units = units
@@ -58,7 +55,7 @@ impl Add<Command> for SimplePosition {
             Command::Up(units) => Self {
                 horizontal: self.horizontal,
                 depth: self.depth - units,
-            }
+            },
         }
     }
 }
@@ -89,12 +86,15 @@ impl Add<Command> for AimedPosition {
                 aim: self.aim - units,
                 horizontal: self.horizontal,
                 depth: self.depth,
-            }
+            },
         }
     }
 }
 
-fn calculate_position<P>(commands: &str) -> P where P: Default + Add<Command, Output = P> {
+fn calculate_position<P>(commands: &str) -> P
+where
+    P: Default + Add<Command, Output = P>,
+{
     commands
         .lines()
         .filter_map(|value| value.parse::<Command>().ok())
@@ -112,12 +112,14 @@ mod tests {
     #[test]
     fn test_calculate_position_with_example_input() {
         let expected = 150;
-        let actual = super::calculate_position::<SimplePosition>(r#"forward 5
+        let actual = super::calculate_position::<SimplePosition>(
+            r#"forward 5
 down 5
 forward 8
 up 3
 down 8
-forward 2"#);
+forward 2"#,
+        );
 
         assert_eq!(expected, actual.horizontal * actual.depth);
     }
@@ -134,12 +136,14 @@ forward 2"#);
     #[test]
     fn test_calculate_position_with_example_input_for_sliding_window_of_three() {
         let expected = 900;
-        let actual = super::calculate_position::<AimedPosition>(r#"forward 5
+        let actual = super::calculate_position::<AimedPosition>(
+            r#"forward 5
 down 5
 forward 8
 up 3
 down 8
-forward 2"#);
+forward 2"#,
+        );
 
         assert_eq!(expected, actual.horizontal * actual.depth);
     }
