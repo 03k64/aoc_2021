@@ -1,55 +1,18 @@
-use std::str::FromStr;
+fn model_population(seed: String, duration: usize) -> usize {
+    let mut population: Vec<usize> = seed.split(',').filter_map(|timer| timer.parse().ok()).fold(
+        vec![0; 9],
+        |mut summary, fish: usize| {
+            summary[fish] += 1;
+            summary
+        },
+    );
 
-#[derive(Clone, Copy, Debug)]
-struct Lanternfish {
-    timer: u8,
-}
+    (0..duration).for_each(|_day| {
+        population.rotate_left(1);
+        population[6] += population[8];
+    });
 
-impl FromStr for Lanternfish {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let timer = s.parse().map_err(|_| ())?;
-
-        if timer <= 8 {
-            Ok(Self { timer })
-        } else {
-            Err(())
-        }
-    }
-}
-
-impl Lanternfish {
-    fn new() -> Self {
-        Self { timer: 8 }
-    }
-
-    fn age(&mut self) -> Option<Self> {
-        if self.timer == 0 {
-            self.timer = 6;
-            Some(Self::new())
-        } else {
-            self.timer -= 1;
-            None
-        }
-    }
-}
-
-fn model_population(seed: String, duration: u8) -> usize {
-    let mut population: Vec<Lanternfish> = seed
-        .split(',')
-        .filter_map(|timer| timer.parse().ok())
-        .collect();
-
-    (0..duration)
-        .for_each(|day| {
-            let mut new_fish: Vec<Lanternfish> = population.iter_mut().filter_map(|f| f.age()).collect();
-            dbg!(day, new_fish.len());
-            population.append(&mut new_fish);
-            // dbg!(&population.iter().map(|fish| fish.timer.to_string()).collect::<String>());
-        });
-
-    population.len()
+    population.iter().sum()
 }
 
 #[cfg(test)]
@@ -59,42 +22,42 @@ mod tests {
     }
 
     fn use_real_input() -> String {
-        include_str!("../input/day_six.txt").to_owned()
+        include_str!("../input/day_six.txt").trim().to_owned()
     }
 
-    // #[test]
-    // fn test_model_population_with_example_input() {
-    //     let input = use_example_input();
-    //     let expected = 5934;
-    //     let actual = super::model_population(input, 80);
-
-    //     assert_eq!(expected, actual);
-    // }
-
     #[test]
-    fn test_model_population_with_real_input() {
-        let input = use_real_input();
-        let expected = 0;
+    fn test_model_population_with_example_input() {
+        let input = use_example_input();
+        let expected = 5934;
         let actual = super::model_population(input, 80);
 
         assert_eq!(expected, actual);
     }
 
-    // #[test]
-    // fn test_model_population_with_example_input() {
-    //     let input = use_example_input();
-    //     let expected = 12;
-    //     let actual = super::model_population(input);
+    #[test]
+    fn test_model_population_with_real_input() {
+        let input = use_real_input();
+        let expected = 390011;
+        let actual = super::model_population(input, 80);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 
-    // #[test]
-    // fn test_model_population_with_real_input() {
-    //     let input = use_real_input();
-    //     let expected = 17013;
-    //     let actual = super::model_population(input);
+    #[test]
+    fn test_model_population_with_example_input_and_longer_duration() {
+        let input = use_example_input();
+        let expected = 26984457539;
+        let actual = super::model_population(input, 256);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_model_population_with_real_input_and_longer_lifespan() {
+        let input = use_real_input();
+        let expected = 1746710169834;
+        let actual = super::model_population(input, 256);
+
+        assert_eq!(expected, actual);
+    }
 }
