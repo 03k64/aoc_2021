@@ -1,7 +1,74 @@
-use std::{collections::HashMap, hash::Hash, str::FromStr};
+use std::{cmp::Ordering, collections::HashMap, hash::Hash, str::FromStr};
 
-trait Point: Sized {
-    fn calculate_scalar(&self, other: Self) -> Option<Vec<Self>>;
+trait Point: Copy + Eq + PartialEq + Sized {
+    fn new(x: usize, y: usize) -> Self;
+
+    fn x(&self) -> usize;
+
+    fn y(&self) -> usize;
+
+    fn from_coords(coords: &str) -> Result<Self, ()> {
+        let (x, y) = coords.split_once(',').unwrap_or_default();
+
+        match (x.parse(), y.parse()) {
+            (Ok(x), Ok(y)) => Ok(Self::new(x, y)),
+            _ => Err(()),
+        }
+    }
+
+    fn calculate_scalar(self, other: Self) -> Option<Vec<Self>> {
+        match (self.x().cmp(&other.x()), self.y().cmp(&other.y())) {
+            (Ordering::Equal, Ordering::Equal) => Some(vec![self]),
+            (Ordering::Equal, Ordering::Greater | Ordering::Less) => Some(vertical_scalar(self, other)),
+            (Ordering::Greater | Ordering::Less, Ordering::Equal) => Some(horizontal_scalar(self, other)),
+            _ => Some(diagonal_scalar(self, other)),
+        }
+    }
+}
+
+fn diagonal_scalar<P>(a: P, b: P) -> Vec<P> where P: Point {
+    let mut current = a;
+    let mut scalar = vec![];
+
+    let x_step: isize = match a.x().cmp(&b.x()) {
+        Ordering::Equal => 0,
+        Ordering::Greater => -1,
+        Ordering::Less => 1,
+    };
+
+    let y_step: isize = match a.y().cmp(&b.y()) {
+        Ordering::Equal => 0,
+        Ordering::Greater => -1,
+        Ordering::Less => 1,
+    };
+
+    while current != b {
+        let next_x = current.x() as isize + x_step;
+        let next_y = current.y() as isize + y_step;
+        scalar.push(current);
+
+        current = P::new(next_x as usize, next_y as usize);
+    }
+
+    scalar.push(current);
+
+    scalar
+}
+
+fn horizontal_scalar<P>(a: P, b: P) -> Vec<P> where P: Point {
+    if a.x() > b.x() {
+        (b.x()..=a.x()).map(|x| P::new(x, a.y())).collect()
+    } else {
+        (a.x()..=b.x()).map(|x| P::new(x, a.y())).collect()
+    }
+}
+
+fn vertical_scalar<P>(a: P, b: P) -> Vec<P> where P: Point {
+    if a.y() > b.y() {
+        (b.y()..=a.y()).map(|y| P::new(a.x(), y)).collect()
+    } else {
+        (a.y()..=b.y()).map(|y| P::new(a.x(), y)).collect()
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -10,50 +77,25 @@ struct OrthogonalPoint {
     y: usize,
 }
 
-impl From<(usize, usize)> for OrthogonalPoint {
-    fn from((x, y): (usize, usize)) -> Self {
+impl Point for OrthogonalPoint {
+    fn new(x: usize, y: usize) -> Self {
         Self { x, y }
     }
-}
 
-impl FromStr for OrthogonalPoint {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (x, y) = s.split_once(',').unwrap_or_default();
-
-        match (x.parse(), y.parse()) {
-            (Ok(x), Ok(y)) => Ok(Self::from((x, y))),
-            _ => Err(()),
-        }
-    }
-}
-
-impl Point for OrthogonalPoint {
-    fn calculate_scalar(&self, other: Self) -> Option<Vec<Self>> {
-        match (self.x == other.x, self.y == other.y) {
-            (true, true) => Some(vec![*self]),
-            (true, false) => Some(self.vertical_scalar(other)),
-            (false, true) => Some(self.horizontal_scalar(other)),
-            (false, false) => None,
-        }
-    }
-}
-
-impl OrthogonalPoint {
-    fn horizontal_scalar(&self, other: Self) -> Vec<Self> {
-        if self.x > other.x {
-            (other.x..=self.x).map(|x| Self { x, y: self.y }).collect()
-        } else {
-            (self.x..=other.x).map(|x| Self { x, y: self.y }).collect()
-        }
+    fn x(&self) -> usize {
+        self.x
     }
 
-    fn vertical_scalar(&self, other: Self) -> Vec<Self> {
-        if self.y > other.y {
-            (other.y..=self.y).map(|y| Self { y, x: self.x }).collect()
-        } else {
-            (self.y..=other.y).map(|y| Self { y, x: self.x }).collect()
+    fn y(&self) -> usize {
+        self.y
+    }
+
+    fn calculate_scalar(self, other: Self) -> Option<Vec<Self>> {
+        match (self.x().cmp(&other.x()), self.y().cmp(&other.y())) {
+            (Ordering::Equal, Ordering::Equal) => Some(vec![self]),
+            (Ordering::Equal, Ordering::Greater | Ordering::Less) => Some(vertical_scalar(self, other)),
+            (Ordering::Greater | Ordering::Less, Ordering::Equal) => Some(horizontal_scalar(self, other)),
+            _ => None, // effectively remove diagonal scalar implementation for orthogonal point
         }
     }
 }
@@ -64,28 +106,17 @@ struct DiagonalPoint {
     y: usize,
 }
 
-impl From<(usize, usize)> for DiagonalPoint {
-    fn from((x, y): (usize, usize)) -> Self {
+impl Point for DiagonalPoint {
+    fn new(x: usize, y: usize) -> Self {
         Self { x, y }
     }
-}
 
-impl FromStr for DiagonalPoint {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (x, y) = s.split_once(',').unwrap_or_default();
-
-        match (x.parse(), y.parse()) {
-            (Ok(x), Ok(y)) => Ok(Self::from((x, y))),
-            _ => Err(()),
-        }
+    fn x(&self) -> usize {
+        self.x
     }
-}
 
-impl Point for DiagonalPoint {
-    fn calculate_scalar(&self, _other: Self) -> Option<Vec<Self>> {
-        None
+    fn y(&self) -> usize {
+        self.y
     }
 }
 
@@ -97,7 +128,7 @@ fn calculate_overlapping_points<P>(input: Vec<String>) -> usize where P: Point +
             |mut frequencies, line| {
                 let (a, b) = line.split_once(" -> ").unwrap_or_default();
 
-                match (a.parse::<P>(), b.parse()) {
+                match (P::from_coords(a), P::from_coords(b)) {
                     (Ok(a), Ok(b)) => {
                         let scalar = a.calculate_scalar(b).unwrap_or_default();
                         scalar.into_iter().for_each(|point| {
@@ -172,12 +203,12 @@ mod tests {
         assert_eq!(expected, actual);
     }
 
-    // #[test]
-    // fn test_calculate_overlapping_diagonal_points_with_real_input() {
-    //     let input = use_real_input();
-    //     let expected = 10478;
-    //     let actual = super::calculate_overlapping_points(input);
+    #[test]
+    fn test_calculate_overlapping_diagonal_points_with_real_input() {
+        let input = use_real_input();
+        let expected = 17013;
+        let actual = super::calculate_overlapping_points::<DiagonalPoint>(input);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 }
