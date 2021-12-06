@@ -58,6 +58,37 @@ impl OrthogonalPoint {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct DiagonalPoint {
+    x: usize,
+    y: usize,
+}
+
+impl From<(usize, usize)> for DiagonalPoint {
+    fn from((x, y): (usize, usize)) -> Self {
+        Self { x, y }
+    }
+}
+
+impl FromStr for DiagonalPoint {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (x, y) = s.split_once(',').unwrap_or_default();
+
+        match (x.parse(), y.parse()) {
+            (Ok(x), Ok(y)) => Ok(Self::from((x, y))),
+            _ => Err(()),
+        }
+    }
+}
+
+impl Point for DiagonalPoint {
+    fn calculate_scalar(&self, _other: Self) -> Option<Vec<Self>> {
+        None
+    }
+}
+
 fn calculate_overlapping_points<P>(input: Vec<String>) -> usize where P: Point + Eq + FromStr + Hash {
     input
         .iter()
@@ -87,7 +118,7 @@ fn calculate_overlapping_points<P>(input: Vec<String>) -> usize where P: Point +
 
 #[cfg(test)]
 mod tests {
-    use crate::day_five::OrthogonalPoint;
+    use crate::day_five::{DiagonalPoint, OrthogonalPoint};
 
     fn use_example_input() -> Vec<String> {
         String::from(
@@ -115,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_overlapping_points_with_example_input() {
+    fn test_calculate_overlapping_orthogonal_points_with_example_input() {
         let input = use_example_input();
         let expected = 5;
         let actual = super::calculate_overlapping_points::<OrthogonalPoint>(input);
@@ -124,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_overlapping_points_with_real_input() {
+    fn test_calculate_overlapping_orthogonal_points_with_real_input() {
         let input = use_real_input();
         let expected = 5835;
         let actual = super::calculate_overlapping_points::<OrthogonalPoint>(input);
@@ -132,17 +163,17 @@ mod tests {
         assert_eq!(expected, actual);
     }
 
-    // #[test]
-    // fn test_calculate_overlapping_points_with_example_input() {
-    //     let input = use_example_input();
-    //     let expected = 1924;
-    //     let actual = super::calculate_overlapping_points(input);
+    #[test]
+    fn test_calculate_overlapping_diagonal_points_with_example_input() {
+        let input = use_example_input();
+        let expected = 12;
+        let actual = super::calculate_overlapping_points::<DiagonalPoint>(input);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 
     // #[test]
-    // fn test_calculate_overlapping_points_with_real_input() {
+    // fn test_calculate_overlapping_diagonal_points_with_real_input() {
     //     let input = use_real_input();
     //     let expected = 10478;
     //     let actual = super::calculate_overlapping_points(input);
