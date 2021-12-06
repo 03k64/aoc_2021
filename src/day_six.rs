@@ -36,18 +36,17 @@ impl Lanternfish {
 }
 
 fn model_population(seed: String, duration: u8) -> usize {
-    dbg!(&seed);
-
     let mut population: Vec<Lanternfish> = seed
         .split(',')
         .filter_map(|timer| timer.parse().ok())
         .collect();
 
-    (0..=duration)
-        .for_each(|_| {
+    (0..duration)
+        .for_each(|day| {
             let mut new_fish: Vec<Lanternfish> = population.iter_mut().filter_map(|f| f.age()).collect();
+            dbg!(day, new_fish.len());
             population.append(&mut new_fish);
-            dbg!(&population);
+            // dbg!(&population.iter().map(|fish| fish.timer.to_string()).collect::<String>());
         });
 
     population.len()
@@ -60,41 +59,41 @@ mod tests {
     }
 
     fn use_real_input() -> String {
-        include_str!("../input/day_five.txt").to_owned()
+        include_str!("../input/day_six.txt").to_owned()
     }
 
+    // #[test]
+    // fn test_model_population_with_example_input() {
+    //     let input = use_example_input();
+    //     let expected = 5934;
+    //     let actual = super::model_population(input, 80);
+
+    //     assert_eq!(expected, actual);
+    // }
+
     #[test]
-    fn test_model_population_with_example_input() {
-        let input = use_example_input();
-        let expected = 5934;
-        let actual = super::model_population(input, 18);
+    fn test_model_population_with_real_input() {
+        let input = use_real_input();
+        let expected = 0;
+        let actual = super::model_population(input, 80);
 
         assert_eq!(expected, actual);
     }
 
     // #[test]
-    // fn test_calculate_overlapping_orthogonal_points_with_real_input() {
-    //     let input = use_real_input();
-    //     let expected = 5835;
-    //     let actual = super::calculate_overlapping_points::<OrthogonalPoint>(input);
-
-    //     assert_eq!(expected, actual);
-    // }
-
-    // #[test]
-    // fn test_calculate_overlapping_diagonal_points_with_example_input() {
+    // fn test_model_population_with_example_input() {
     //     let input = use_example_input();
     //     let expected = 12;
-    //     let actual = super::calculate_overlapping_points::<DiagonalPoint>(input);
+    //     let actual = super::model_population(input);
 
     //     assert_eq!(expected, actual);
     // }
 
     // #[test]
-    // fn test_calculate_overlapping_diagonal_points_with_real_input() {
+    // fn test_model_population_with_real_input() {
     //     let input = use_real_input();
     //     let expected = 17013;
-    //     let actual = super::calculate_overlapping_points::<DiagonalPoint>(input);
+    //     let actual = super::model_population(input);
 
     //     assert_eq!(expected, actual);
     // }
