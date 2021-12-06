@@ -1,6 +1,10 @@
-use std::cmp::Ordering;
+use std::{collections::HashMap, hash::Hash, str::FromStr};
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+trait Point: Sized {
+    fn calculate_scalar(&self, other: Self) -> Option<Vec<Self>>;
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct OrthogonalPoint {
     x: usize,
     y: usize,
@@ -12,19 +16,20 @@ impl From<(usize, usize)> for OrthogonalPoint {
     }
 }
 
-impl Ord for OrthogonalPoint {
-    fn cmp(&self, other: &Self) -> Ordering {
-        Ordering::Equal
+impl FromStr for OrthogonalPoint {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (x, y) = s.split_once(',').unwrap_or_default();
+
+        match (x.parse(), y.parse()) {
+            (Ok(x), Ok(y)) => Ok(Self::from((x, y))),
+            _ => Err(()),
+        }
     }
 }
 
-impl PartialOrd for OrthogonalPoint {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl OrthogonalPoint {
+impl Point for OrthogonalPoint {
     fn calculate_scalar(&self, other: Self) -> Option<Vec<Self>> {
         match (self.x == other.x, self.y == other.y) {
             (true, true) => Some(vec![*self]),
@@ -33,47 +38,57 @@ impl OrthogonalPoint {
             (false, false) => None,
         }
     }
+}
 
+impl OrthogonalPoint {
     fn horizontal_scalar(&self, other: Self) -> Vec<Self> {
         if self.x > other.x {
-            (other.x..self.x).map(|x| Self { x, y: self.y }).collect()
+            (other.x..=self.x).map(|x| Self { x, y: self.y }).collect()
         } else {
-            (self.x..other.x).map(|x| Self { x, y: self.y }).collect()
+            (self.x..=other.x).map(|x| Self { x, y: self.y }).collect()
         }
     }
 
     fn vertical_scalar(&self, other: Self) -> Vec<Self> {
         if self.y > other.y {
-            (other.y..self.y).map(|y| Self { y, x: self.x }).collect()
+            (other.y..=self.y).map(|y| Self { y, x: self.x }).collect()
         } else {
-            (self.y..other.y).map(|y| Self { y, x: self.x }).collect()
+            (self.y..=other.y).map(|y| Self { y, x: self.x }).collect()
         }
     }
 }
 
-fn calculate_overlapping_points(input: Vec<String>) -> usize {
-    let points: Vec<OrthogonalPoint> = input.iter().fold(vec![], |mut points, line| {
-        let (a, b) = line.split_once(" -> ").unwrap_or_default();
-        let (ax, ay) = a.split_once(',').unwrap_or_default();
-        let ax = ax.parse().unwrap_or_default();
-        let ay = ay.parse().unwrap_or_default();
-        let a = OrthogonalPoint::from((ax, ay));
+fn calculate_overlapping_points<P>(input: Vec<String>) -> usize where P: Point + Eq + FromStr + Hash {
+    input
+        .iter()
+        .fold(
+            HashMap::with_capacity(input.len()),
+            |mut frequencies, line| {
+                let (a, b) = line.split_once(" -> ").unwrap_or_default();
 
-        let (bx, by) = b.split_once(',').unwrap_or_default();
-        let bx = bx.parse().unwrap_or_default();
-        let by = by.parse().unwrap_or_default();
-        let b = OrthogonalPoint::from((ax, ay));
+                match (a.parse::<P>(), b.parse()) {
+                    (Ok(a), Ok(b)) => {
+                        let scalar = a.calculate_scalar(b).unwrap_or_default();
+                        scalar.into_iter().for_each(|point| {
+                            let frequency = frequencies.entry(point).or_insert(0);
+                            *frequency += 1;
+                        });
+                    }
+                    _ => {}
+                }
 
-        if let Some(mut scalar) = a.calculate_scalar(b) {
-            points.append(&mut scalar);
-        }
-
-        points
-    });
+                frequencies
+            },
+        )
+        .values()
+        .filter(|frequency| **frequency > 1)
+        .count()
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::day_five::OrthogonalPoint;
+
     fn use_example_input() -> Vec<String> {
         String::from(
             r#"0,9 -> 5,9
@@ -103,19 +118,19 @@ mod tests {
     fn test_calculate_overlapping_points_with_example_input() {
         let input = use_example_input();
         let expected = 5;
-        let actual = super::calculate_overlapping_points(input);
+        let actual = super::calculate_overlapping_points::<OrthogonalPoint>(input);
 
         assert_eq!(expected, actual);
     }
 
-    // #[test]
-    // fn test_calculate_overlapping_points_with_real_input() {
-    //     let input = use_real_input();
-    //     let expected = 41668;
-    //     let actual = super::calculate_overlapping_points(input);
+    #[test]
+    fn test_calculate_overlapping_points_with_real_input() {
+        let input = use_real_input();
+        let expected = 5835;
+        let actual = super::calculate_overlapping_points::<OrthogonalPoint>(input);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 
     // #[test]
     // fn test_calculate_overlapping_points_with_example_input() {
