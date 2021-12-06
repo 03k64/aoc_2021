@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::HashMap, hash::Hash, str::FromStr};
+use std::{cmp::Ordering, collections::HashMap, hash::Hash};
 
 trait Point: Copy + Eq + PartialEq + Sized {
     fn new(x: usize, y: usize) -> Self;
@@ -120,7 +120,7 @@ impl Point for DiagonalPoint {
     }
 }
 
-fn calculate_overlapping_points<P>(input: Vec<String>) -> usize where P: Point + Eq + FromStr + Hash {
+fn calculate_overlapping_points<P>(input: Vec<String>) -> usize where P: Point + Eq + Hash {
     input
         .iter()
         .fold(
