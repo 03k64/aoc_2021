@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod day_eight;
 mod day_five;
 mod day_four;
 mod day_one;
