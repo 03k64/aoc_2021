@@ -1,54 +1,4 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct Position {
-    x: usize,
-    y: usize,
-}
-
-impl Position {
-    fn down(self) -> Option<Self> {
-        if self.y < usize::MAX {
-            Some(Self {
-                x: self.x,
-                y: self.y + 1,
-            })
-        } else {
-            None
-        }
-    }
-
-    fn left(self) -> Option<Self> {
-        if self.x > 0 {
-            Some(Self {
-                x: self.x - 1,
-                y: self.y,
-            })
-        } else {
-            None
-        }
-    }
-
-    fn right(self) -> Option<Self> {
-        if self.x < usize::MAX {
-            Some(Self {
-                x: self.x + 1,
-                y: self.y,
-            })
-        } else {
-            None
-        }
-    }
-
-    fn up(self) -> Option<Self> {
-        if self.y > 0 {
-            Some(Self {
-                x: self.x,
-                y: self.y - 1,
-            })
-        } else {
-            None
-        }
-    }
-}
+use crate::position::Position;
 
 fn parse_input(input: Vec<String>, height: usize, width: usize) -> Vec<Vec<u32>> {
     let mut matrix = vec![vec![0u32; width]; height];
@@ -88,15 +38,10 @@ fn spread(
     basin.push(current);
 
     // if next position to right is still a candidate, move there
-    [
-        current.down(),
-        current.left(),
-        current.right(),
-        current.up(),
-    ]
-    .into_iter()
-    .filter_map(|next| next)
-    .for_each(|next| spread(next, candidates, basin, boundaries, height_map));
+    current
+        .neighbours_orthogonal()
+        .into_iter()
+        .for_each(|next| spread(next, candidates, basin, boundaries, height_map));
 }
 
 fn sum_risk_levels(input: Vec<String>) -> u32 {
