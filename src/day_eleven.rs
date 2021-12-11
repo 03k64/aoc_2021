@@ -1,9 +1,21 @@
 use crate::position::Position;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, ops::Add};
 
+#[derive(Clone, Copy, Default)]
 struct Octopus {
     energy_level: u32,
     flashed: bool,
+}
+
+impl Add<u32> for Octopus {
+    type Output = Self;
+
+    fn add(self, rhs: u32) -> Self::Output {
+        Self {
+            energy_level: self.energy_level + rhs,
+            flashed: self.flashed,
+        }
+    }
 }
 
 impl TryFrom<char> for Octopus {
@@ -21,70 +33,119 @@ impl TryFrom<char> for Octopus {
     }
 }
 
-fn build_candidates(height: usize, width: usize) -> Vec<Position> {
-    (0..height).fold(vec![], |mut locs, y| {
-        let mut row = (0..width).into_iter().map(|x| Position { x, y }).collect();
-        locs.append(&mut row);
-        locs
-    })
+impl Octopus {
+    fn reset_if_flashed(self) -> Self {
+        if self.flashed {
+            Self::default()
+        } else {
+            self
+        }
+    }
 }
 
-fn calculate_flashes(input: Vec<String>, steps: usize) -> usize {
-    let mut octopi: Vec<Vec<Octopus>> = input
+fn parse_input(input: Vec<String>) -> Vec<Octopus> {
+    input
         .into_iter()
-        .map(|line| line.chars().filter_map(|c| c.try_into().ok()).collect())
-        .collect();
+        .flat_map(|line| {
+            line.chars()
+                .filter_map(|c| c.try_into().ok())
+                .collect::<Vec<Octopus>>()
+        })
+        .collect()
+}
 
-    let height = octopi.len();
-    let width = octopi.get(0).map(|row| row.len()).unwrap_or_default();
+pub fn calculate_flashes(input: Vec<String>, steps: usize) -> usize {
+    let height = input.len();
+    let width = input
+        .get(0)
+        .map(|row| row.chars().count())
+        .unwrap_or_default();
 
-    (0..steps).fold(0, |mut flashes, _step| {
-        let mut flashed = false;
+    let (flashes, _) = (0..steps).fold(
+        (0, parse_input(input)),
+        |(mut flashes, mut octopi), _step| {
+            let mut flashed = true;
 
-        // increase energy level by one
-        for row in 0..height {
-            for col in 0..width {
-                octopi[row][col].energy_level += 1;
+            octopi = octopi.into_iter().map(|o| o + 1).collect();
 
-                if octopi[row][col].energy_level > 9 {
-                    flashed = true;
-                }
-            }
-        }
+            while flashed {
+                flashed = false;
 
-        while flashed {
-            flashed = false;
-
-            for row in 0..height {
-                for col in 0..width {
-                    if octopi[row][col].energy_level > 9 && !octopi[row][col].flashed {
-                        octopi[row][col].flashed = true;
+                for ix in 0..octopi.len() {
+                    if octopi[ix].energy_level > 9 && !octopi[ix].flashed {
+                        octopi[ix].flashed = true;
                         flashes += 1;
                         flashed = true;
 
-                        Position { x: col, y: row }
-                            .neighbours_all()
-                            .into_iter()
-                            .filter(|position| position.x < width && position.y < height)
-                            .for_each(|position| {
-                                octopi[position.y][position.x].energy_level += 1;
-                            });
+                        Position {
+                            x: ix % width,
+                            y: ix / height,
+                        }
+                        .neighbours_all(height, width)
+                        .into_iter()
+                        .for_each(|position| {
+                            octopi[position.y * height + position.x].energy_level += 1;
+                        });
                     }
                 }
             }
-        }
 
-        for row in 0..height {
-            for col in 0..width {
-                if octopi[row][col].flashed {
-                    octopi[row][col].energy_level = 0;
-                    octopi[row][col].flashed = false;
+            octopi = octopi.into_iter().map(|o| o.reset_if_flashed()).collect();
+
+            (flashes, octopi)
+        },
+    );
+
+    flashes
+}
+
+pub fn find_synchronised_flash(input: Vec<String>) -> usize {
+    let height = input.len();
+    let width = input
+        .get(0)
+        .map(|row| row.chars().count())
+        .unwrap_or_default();
+
+    let mut octopi = parse_input(input);
+
+    (1..usize::MAX)
+        .find(|_step| {
+            let mut flashed = true;
+            let mut flashes = 0;
+
+            for ix in 0..octopi.len() {
+                octopi[ix] = octopi[ix] + 1;
+            }
+
+            while flashed {
+                flashed = false;
+
+                for ix in 0..octopi.len() {
+                    if octopi[ix].energy_level > 9 && !octopi[ix].flashed {
+                        octopi[ix].flashed = true;
+                        flashes += 1;
+                        flashed = true;
+
+                        Position {
+                            x: ix % width,
+                            y: ix / height,
+                        }
+                        .neighbours_all(height, width)
+                        .into_iter()
+                        .for_each(|position| {
+                            octopi[position.y * height + position.x].energy_level += 1;
+                        });
+                    }
                 }
             }
-        }
 
-        flashes
-    })
+            for ix in 0..octopi.len() {
+                octopi[ix] = octopi[ix].reset_if_flashed();
+            }
+
+            flashes == octopi.len()
+        })
+        .unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -132,20 +193,20 @@ mod tests {
         assert_eq!(expected, actual);
     }
 
-    // #[test]
-    // fn test_calculate_incomplete_score_with_example_input() {
-    //     let input = use_example_input();
-    //     let expected = 0;
-    //     let actual = super::calculate_incomplete_score(input);
+    #[test]
+    fn test_find_synchronised_flash_with_example_input() {
+        let input = use_example_input();
+        let expected = 195;
+        let actual = super::find_synchronised_flash(input);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 
     // #[test]
-    // fn test_calculate_incomplete_score_with_real_input() {
+    // fn test_find_synchronised_flash_with_real_input() {
     //     let input = use_real_input();
     //     let expected = 0;
-    //     let actual = super::calculate_incomplete_score(input);
+    //     let actual = super::find_synchronised_flash(input);
 
     //     assert_eq!(expected, actual);
     // }

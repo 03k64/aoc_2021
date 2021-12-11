@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 mod day_eight;
-mod day_eleven;
+pub mod day_eleven;
 mod day_five;
 mod day_four;
 mod day_nine;

@@ -18,6 +18,8 @@ fn spread(
     basin: &mut Vec<Position>,
     boundaries: &mut Vec<Position>,
     height_map: &Vec<Vec<u32>>,
+    height: usize,
+    width: usize,
 ) {
     if let Some(position) = candidates.iter().position(|p| *p == current) {
         // remove current position from candidates
@@ -39,9 +41,13 @@ fn spread(
 
     // if next position to right is still a candidate, move there
     current
-        .neighbours_orthogonal()
+        .neighbours_orthogonal(height, width)
         .into_iter()
-        .for_each(|next| spread(next, candidates, basin, boundaries, height_map));
+        .for_each(|next| {
+            spread(
+                next, candidates, basin, boundaries, height_map, height, width,
+            )
+        });
 }
 
 fn sum_risk_levels(input: Vec<String>) -> u32 {
@@ -89,6 +95,8 @@ fn multiply_basin_sizes(input: Vec<String>) -> usize {
             &mut basin,
             &mut boundaries,
             &height_map,
+            height,
+            width,
         );
 
         if !basin.is_empty() {

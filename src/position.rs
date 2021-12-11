@@ -5,15 +5,15 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn neighbours_all(self) -> Vec<Self> {
+    pub fn neighbours_all(self, height: usize, width: usize) -> Vec<Self> {
         vec![
-            self.bottom_left(),
-            self.bottom_right(),
-            self.down(),
+            self.bottom_left(height),
+            self.bottom_right(height, width),
+            self.down(height),
             self.left(),
-            self.right(),
+            self.right(width),
             self.top_left(),
-            self.top_right(),
+            self.top_right(width),
             self.up(),
         ]
         .into_iter()
@@ -21,15 +21,15 @@ impl Position {
         .collect()
     }
 
-    pub fn neighbours_orthogonal(self) -> Vec<Self> {
-        vec![self.down(), self.left(), self.right(), self.up()]
+    pub fn neighbours_orthogonal(self, height: usize, width: usize) -> Vec<Self> {
+        vec![self.down(height), self.left(), self.right(width), self.up()]
             .into_iter()
             .filter_map(|n| n)
             .collect()
     }
 
-    fn bottom_left(self) -> Option<Self> {
-        if self.x > 0 && self.y < usize::MAX {
+    fn bottom_left(self, height: usize) -> Option<Self> {
+        if self.x > 0 && self.y < height - 1 {
             Some(Self {
                 x: self.x - 1,
                 y: self.y + 1,
@@ -39,8 +39,8 @@ impl Position {
         }
     }
 
-    fn bottom_right(self) -> Option<Self> {
-        if self.x < usize::MAX && self.y < usize::MAX {
+    fn bottom_right(self, height: usize, width: usize) -> Option<Self> {
+        if self.x < width - 1 && self.y < height - 1 {
             Some(Self {
                 x: self.x + 1,
                 y: self.y + 1,
@@ -50,8 +50,8 @@ impl Position {
         }
     }
 
-    fn down(self) -> Option<Self> {
-        if self.y < usize::MAX {
+    fn down(self, height: usize) -> Option<Self> {
+        if self.y < height - 1 {
             Some(Self {
                 x: self.x,
                 y: self.y + 1,
@@ -72,8 +72,8 @@ impl Position {
         }
     }
 
-    fn right(self) -> Option<Self> {
-        if self.x < usize::MAX {
+    fn right(self, width: usize) -> Option<Self> {
+        if self.x < width - 1 {
             Some(Self {
                 x: self.x + 1,
                 y: self.y,
@@ -94,8 +94,8 @@ impl Position {
         }
     }
 
-    fn top_right(self) -> Option<Self> {
-        if self.x < usize::MAX && self.y > 0 {
+    fn top_right(self, width: usize) -> Option<Self> {
+        if self.x < width - 1 && self.y > 0 {
             Some(Self {
                 x: self.x + 1,
                 y: self.y - 1,
