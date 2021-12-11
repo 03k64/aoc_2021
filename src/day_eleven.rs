@@ -202,12 +202,12 @@ mod tests {
         assert_eq!(expected, actual);
     }
 
-    // #[test]
-    // fn test_find_synchronised_flash_with_real_input() {
-    //     let input = use_real_input();
-    //     let expected = 0;
-    //     let actual = super::find_synchronised_flash(input);
+    #[test]
+    fn test_find_synchronised_flash_with_real_input() {
+        let input = use_real_input();
+        let expected = 422;
+        let actual = super::find_synchronised_flash(input);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 }
