@@ -28,7 +28,7 @@ impl FromStr for Fold {
 
 fn fold_left(map: &mut DotMap, height: usize, width: usize) {
     let start = width + 1;
-    let end = start + width;
+    let end = (start + width).min(map.get(0).map(|row| row.len()).unwrap_or_default());
 
     (0..height).for_each(|y| {
         (start..end).for_each(|x| {
@@ -41,7 +41,7 @@ fn fold_left(map: &mut DotMap, height: usize, width: usize) {
 
 fn fold_up(map: &mut DotMap, width: usize, height: usize) {
     let start = height + 1;
-    let end = start + height;
+    let end = (start + height).min(map.len());
 
     // 'fold' rows up
     (start..end).for_each(|y| {
@@ -124,9 +124,36 @@ fn fold_paper(input: Vec<String>, num_folds: Option<usize>) -> DotMap {
 fn count_visible_dots(input: Vec<String>, num_folds: usize) -> usize {
     let map = fold_paper(input, Some(num_folds));
 
+    let output: Vec<String> = map
+        .iter()
+        .map(|row| {
+            row.iter()
+                .map(|d| if d.is_some() { "#" } else { "." })
+                .collect::<String>()
+        })
+        .collect();
+
+    println!("{}", output.join("\n"));
+
     map.into_iter().fold(0, |sum, row| {
         sum + row.into_iter().filter(|d| d.is_some()).count()
     })
+}
+
+fn output_map(input: Vec<String>) -> Result<(), ()> {
+    let map = fold_paper(input, None);
+    let output: Vec<String> = map
+        .into_iter()
+        .map(|row| {
+            row.into_iter()
+                .map(|d| if d.is_some() { "#" } else { "." })
+                .collect::<String>()
+        })
+        .collect();
+
+    println!("{}", output.join("\n"));
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -187,21 +214,21 @@ fold along x=5"#,
         assert_eq!(expected, actual);
     }
 
-    // #[test]
-    // fn test_count_visible_dots_after_all_folds_with_example_input() {
-    //     let input = use_example_input();
-    //     let expected = 0;
-    //     let actual = super::count_visible_dots(input, None);
+    #[test]
+    fn test_count_visible_dots_after_all_folds_with_example_input() {
+        let input = use_example_input();
+        let expected = Ok(()); // TODO: this should be "O"
+        let actual = super::output_map(input);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 
-    // #[test]
-    // fn test_count_visible_dots_after_all_folds_with_real_input() {
-    //     let input = use_real_input();
-    //     let expected = 0;
-    //     let actual = super::count_visible_dots(input, None);
+    #[test]
+    fn test_count_visible_dots_after_all_folds_with_real_input() {
+        let input = use_real_input();
+        let expected = Ok(()); // TODO: this should be "CJHAZHKU"
+        let actual = super::output_map(input);
 
-    //     assert_eq!(expected, actual);
-    // }
+        assert_eq!(expected, actual);
+    }
 }
