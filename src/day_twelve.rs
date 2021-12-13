@@ -281,7 +281,7 @@ start-RW"#,
     #[test]
     fn test_enumerate_complex_paths_with_real_input() {
         let input = use_real_input();
-        let expected = 0;
+        let expected = 92111;
         let actual = super::enumerate_paths::<ComplexPath>(input);
 
         assert_eq!(expected, actual.len());
